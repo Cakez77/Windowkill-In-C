@@ -9,7 +9,7 @@ timestamp=$(date +%s)
 if [[ "$(uname)" == "Linux" ]]; then
     echo "Running on Linux"
     libs="-lX11 -lGL -lfreetype"
-    outputFile=schnitzel
+    outputFile=windowkillC
 
     # fPIC position independent code https://stackoverflow.com/questions/5311515/gcc-fpic-option
     rm -f game_* # Remove old game_* files
@@ -22,7 +22,7 @@ elif [[ "$(uname)" == "Darwin" ]]; then
 else
     echo "Running on Windows"
     libs="-luser32 -lopengl32 -lgdi32 -lole32 -Lthird_party/lib -lfreetype.lib"
-    outputFile=schnitzel.exe
+    outputFile=windowkillC.exe
 
     rm -f game_* # Remove old game_* files
     clang++ -g "src/game.cpp" -shared -o game_$timestamp.dll $warnings $defines

@@ -5,7 +5,7 @@
       "name": "Linux Launch",
       "type": "cppdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/schnitzel",
+      "program": "${workspaceFolder}/windowkillC",
       "args": [],
       "cwd": "${workspaceFolder}",
     },
@@ -13,7 +13,7 @@
       "name": "Windows Launch",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/schnitzel.exe",
+      "program": "${workspaceFolder}/windowkillC.exe",
       "args": [],
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal"
