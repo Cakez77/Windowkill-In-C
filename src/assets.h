@@ -12,14 +12,8 @@
 enum SpriteID
 {
   SPRITE_WHITE,
-  SPRITE_DICE,
-  SPRITE_CELESTE,
-  SPRITE_CELESTE_RUN,
-  SPRITE_CELESTE_JUMP,
-  SPRITE_SOLID_01,
-  SPRITE_SOLID_02,  
-  SPRITE_BUTTON_PLAY,
-  SPRITE_BUTTON_SAVE,
+  SPRITE_PLAYER,
+  SPRITE_ENEMY,
 
   SPRITE_COUNT
 };
@@ -48,60 +42,17 @@ Sprite get_sprite(SpriteID spriteID)
       break;
     }
 
-    case SPRITE_DICE:
+    case SPRITE_PLAYER:
     {
       sprite.atlasOffset = {16, 0};
-      sprite.size = {16, 16};
+      sprite.size = {48, 48};
       break;
     }
 
-    case SPRITE_CELESTE:
+    case SPRITE_ENEMY:
     {
-      sprite.atlasOffset = {112, 0};
-      sprite.size = {17, 20};
-      break;
-    }
-
-    case SPRITE_CELESTE_RUN:
-    {
-      sprite.atlasOffset = {128, 0};
-      sprite.size = {17, 20};
-      sprite.frameCount = 12;
-      break;
-    }
-
-    case SPRITE_CELESTE_JUMP:
-    {
-      sprite.atlasOffset = {229, 0};
-      sprite.size = {17, 20};
-      break;
-    }
-
-    case SPRITE_SOLID_01:
-    {
-      sprite.atlasOffset = {0, 16};
-      sprite.size = {28, 18};
-      break;
-    }
-
-    case SPRITE_SOLID_02:
-    {
-      sprite.atlasOffset = {32, 16};
-      sprite.size = {16, 13};
-      break;
-    }
-
-    case SPRITE_BUTTON_PLAY:
-    {
-      sprite.atlasOffset = {80, 0};
-      sprite.size = {32, 16};
-      break;
-    }
-
-    case SPRITE_BUTTON_SAVE:
-    {
-      sprite.atlasOffset = {80, 16};
-      sprite.size = {32, 16};
+      sprite.atlasOffset = {64, 0};
+      sprite.size = {48, 48};
       break;
     }
   }

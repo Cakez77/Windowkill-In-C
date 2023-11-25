@@ -62,6 +62,7 @@ struct RenderData
 
   Array<Material, 1000> materials;
   Array<Transform, 1000> transforms;
+  Array<Transform, 1000> transparentTransforms;
   Array<Transform, 1000> uiTransforms;
 };
 
@@ -164,19 +165,26 @@ Transform get_transform(SpriteID spriteID, Vec2 pos, Vec2 size = {}, DrawData dr
 // #############################################################################
 void draw_quad(Transform transform)
 {
-  renderData->transforms.add(transform);
+  if(transform.renderOptions & RENDERING_OPTION_TRANSPARENT)
+  {
+    renderData->transparentTransforms.add(transform);
+  }
+  else
+  {
+    renderData->transforms.add(transform);
+  }
 }
 
 void draw_quad(Vec2 pos, Vec2 size, DrawData drawData = {})
 {
   Transform transform = get_transform(SPRITE_WHITE, pos, size, drawData);
-  renderData->transforms.add(transform);
+  draw_quad(transform);
 }
 
 void draw_sprite(SpriteID spriteID, Vec2 pos, DrawData drawData = {})
 {
   Transform transform = get_transform(spriteID, pos, {}, drawData);
-  renderData->transforms.add(transform);
+  draw_quad(transform);
 }
 
 void draw_sprite(SpriteID spriteID, IVec2 pos, DrawData drawData = {})

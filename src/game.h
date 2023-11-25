@@ -36,6 +36,13 @@ struct KeyMapping
   Array<KeyCodeID, 3> keys;
 };
 
+struct Projectile
+{
+  Vec2 pos;
+  Vec2 direction;
+  bool hitEnemy = true;
+};
+
 enum GameStateID
 {
   GAME_STATE_MAIN_MENU,
@@ -47,6 +54,11 @@ struct GameState
   GameStateID state;
   bool initialized = false;
   bool roundInitialized = false;
+
+  Vec2 playerPos;
+  Array<Vec2, 30> enemies;
+
+  Array<Projectile, 100> projectiles;
   KeyMapping keyMappings[GAME_INPUT_COUNT];
 };
 

@@ -738,6 +738,14 @@ float clamp(float x, float min, float max)
   return x;
 }
 
+float random_range(float min, float max)
+{
+  // [0;1]
+  float randomFloat = (float)rand() / (float)RAND_MAX;
+  
+  return (max - min) * randomFloat + min;
+}
+
 float approach(float current, float target, float increase)
 {
   if(current < target)
@@ -756,6 +764,13 @@ struct Vec2
 {
   float x;
   float y;
+
+  Vec2& operator+=(Vec2 other)
+  {
+    x += other.x; 
+    y += other.y;
+    return *this;
+  }
 
   Vec2 operator/(float scalar)
   {
@@ -837,6 +852,32 @@ IVec2 lerp(IVec2 a, IVec2 b, float t)
   result.x = (int)floorf(lerp((float)a.x, (float)b.x, t));
   result.y = (int)floorf(lerp((float)a.y, (float)b.y, t));
   return result;
+}
+
+float length(Vec2 v)
+{
+  return sqrtf(v.x * v.x + v.y * v.y);
+}
+
+float length(Vec2 a, Vec2 b)
+{
+  return length(b - a);
+}
+
+Vec2 normalize(Vec2 v)
+{
+  Vec2 normalized = {};
+  float vecLength = length(v);
+  if(vecLength)
+  {
+    normalized = v / vecLength;
+  }
+  else
+  {
+    // SM_ASSERT(0, "Vector has a length of 0");
+  }
+
+  return normalized;
 }
 
 struct Vec4
@@ -952,6 +993,14 @@ bool point_in_rect(Vec2 point, IRect rect)
 bool point_in_rect(IVec2 point, IRect rect)
 {
   return point_in_rect(vec_2(point), rect);
+}
+
+bool point_in_rect_center(Vec2 point, Rect rect)
+{
+  return (point.x >= rect.pos.x - rect.size.x / 2 &&
+          point.x <= rect.pos.x + rect.size.x / 2 &&
+          point.y >= rect.pos.y - rect.size.y / 2 &&
+          point.y <= rect.pos.y + rect.size.y / 2);
 }
 
 bool rect_collision(IRect a, IRect b)

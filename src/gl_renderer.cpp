@@ -9,12 +9,10 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
-
 // #############################################################################
 //                           OpenGL Constants
 // #############################################################################
 const char* TEXTURE_PATH = "assets/textures/TEXTURE_ATLAS.png";
-
 
 // #############################################################################
 //                           OpenGL Structs
@@ -414,14 +412,37 @@ void gl_render(BumpAllocator* transientStorage)
       glUniformMatrix4fv(glContext.orthoProjectionID, 1, GL_FALSE, &orthoProjection.ax);
     }
 
-    // Copy transforms to the GPU
-    glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(Transform) * renderData->transforms.count,
-                    renderData->transforms.elements);
+    // Opaque Transforms
+    {
+      // Copy transforms to the GPU
+      glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(Transform) * renderData->transforms.count,
+                      renderData->transforms.elements);
 
-    glDrawArraysInstanced(GL_TRIANGLES, 0, 6, renderData->transforms.count);
+      glDrawArraysInstanced(GL_TRIANGLES, 0, 6, renderData->transforms.count);
 
-    // Reset for next Frame
-    renderData->transforms.count = 0;
+      // Reset for next Frame
+      renderData->transforms.count = 0;
+    }
+
+    // Transparent Transforms
+    {
+      glEnable(GL_BLEND);
+
+      // Normal Blending Mode
+      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+      // Copy transforms to the GPU
+      glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, 
+                      sizeof(Transform) * renderData->transparentTransforms.count,
+                      renderData->transparentTransforms.elements);
+
+      glDrawArraysInstanced(GL_TRIANGLES, 0, 6, renderData->transparentTransforms.count);
+
+      // Reset for next Frame
+      renderData->transparentTransforms.count = 0;
+
+      glDisable(GL_BLEND);
+    }
   }
 
   // UI Pass

@@ -10,6 +10,22 @@
 // #############################################################################
 //                           Game Structs
 // #############################################################################
+struct SpawnBatch
+{
+  float startTime;
+  float endTime;
+  float frequency;
+  float timer;
+};
+
+// #############################################################################
+//                           Game Globals
+// #############################################################################
+static float gameTime = 0;
+static SpawnBatch spawns[] = 
+{
+  {0, 60, 5}, // Normal Enemies, 1 every 5 Seconds
+};
 
 // #############################################################################
 //                           Game Functions
@@ -84,13 +100,17 @@ EXPORT_FN void update_game(GameState* gameStateIn,
     gameState->initialized = true;
   }
 
-  renderData->gameCamera.dimensions = vec_2(input->screenSize) / 2.0f;
-  renderData->gameCamera.position.x = 0;
-  renderData->gameCamera.position.y = 0;
+  gameTime += dt;
 
-  renderData->uiCamera.dimensions = vec_2(input->screenSize) / 2.0f;
-  renderData->uiCamera.position.x = 0;
-  renderData->uiCamera.position.y = 0;
+  // Top Left Origin Point
+  renderData->gameCamera.dimensions = vec_2(input->screenSize);
+  renderData->gameCamera.position.x = input->screenSize.x / 2.0f;
+  renderData->gameCamera.position.y = -input->screenSize.y / 2.0f;
+
+  // Top Left Origin Point
+  renderData->uiCamera.dimensions = vec_2(input->screenSize);
+  renderData->uiCamera.position.x = input->screenSize.x / 2.0f;
+  renderData->uiCamera.position.y = -input->screenSize.y / 2.0f;
 
   const Vec2 MIN_WINDOW_SIZE = {640, 480};
 
@@ -134,30 +154,44 @@ EXPORT_FN void update_game(GameState* gameStateIn,
 
   const float pixelsPerSecond = dt * 34;
   const float slowdown = 0.3;
+  const float speed = 100;
 
-  if(just_pressed(MOVE_LEFT))
+  if(just_pressed(MOUSE_LEFT))
   {
-    input->forces.x = -4;
-    input->forces.z =  2.2;
-    // input->forces.z = 5 / 2;
+    Projectile proj = 
+    {
+      .pos = gameState->playerPos,
+      .direction = normalize(vec_2(input->mousePos) - gameState->playerPos),
+    };
+
+    gameState->projectiles.add(proj);
   }
 
-  if(just_pressed(MOVE_RIGHT))
+  if(is_down(MOVE_LEFT))
   {
-    input->forces.z = 3;
+    gameState->playerPos.x -= speed * dt;
   }
 
-  if(just_pressed(MOVE_UP))
+  if(is_down(MOVE_RIGHT))
   {
-    input->forces.y = -4;
-    input->forces.w =  2.2;
-    // input->forces.z = 5 / 2;
+    gameState->playerPos.x += speed * dt;
   }
 
-  if(just_pressed(MOVE_DOWN))
+  if(is_down(MOVE_UP))
   {
-    input->forces.w = 3;
+    gameState->playerPos.y -= speed * dt;
   }
+
+  if(is_down(MOVE_DOWN))
+  {
+    gameState->playerPos.y += speed * dt;
+  }
+
+  // TODO: Screen == World, for player position
+  gameState->playerPos.x = clamp(gameState->playerPos.x, 
+                                 6, input->windowRect.size.x - 6);
+  gameState->playerPos.y = clamp(gameState->playerPos.y, 
+                                 6, input->windowRect.size.y - 6);
 
   Vec2 moveStrength = Vec2{input->windowRect.size.x - windowSizeXEnd, 
                             input->windowRect.size.y - windowSizeYEnd} / 
@@ -167,7 +201,6 @@ EXPORT_FN void update_game(GameState* gameStateIn,
   moveStrength.x = ease_out_expo(moveStrength.x * 4);
   moveStrength.y = ease_out_expo(moveStrength.y * 4);
 
-  // draw_format_ui_text("windowSize.y")
   draw_format_ui_text("x:%.2f,y:%.2f", {-140, 0}, moveStrength.x, moveStrength.y);
 
   input->forces.x = approach(input->forces.x, pixelsPerSecond * moveStrength.x, slowdown);
@@ -185,5 +218,128 @@ EXPORT_FN void update_game(GameState* gameStateIn,
   input->windowRect.size.x = clamp(input->windowRect.size.x, windowSizeXEnd, windowSizeXStart);
   input->windowRect.size.y = clamp(input->windowRect.size.y, windowSizeYEnd, windowSizeYStart);
 
-  // draw_quad({100, 100}, {100, 100});
+  draw_sprite(SPRITE_PLAYER, gameState->playerPos, 
+              {.renderOptions = RENDERING_OPTION_TRANSPARENT});
+
+  // Spawn System
+  {
+    Sprite sprite = get_sprite(SPRITE_ENEMY);
+    for(int batchIdx = 0; batchIdx < ArraySize(spawns); batchIdx++)
+    {
+      SpawnBatch& batch = spawns[batchIdx];
+
+      if(gameTime >= batch.startTime && gameTime <= batch.endTime)
+      {
+        batch.timer += dt;
+
+        while(batch.timer >= batch.frequency)
+        {
+          Vec2 pos = {};
+          float x = random_range(-100, 100);
+          if(x < 0)
+          {
+            pos.x = x - sprite.size.x / 2.0f;
+          }
+          else
+          {
+            pos.x = input->windowRect.size.x + x + sprite.size.x / 2.0f;
+          }
+
+          float y = random_range(-100, 100);
+          if(y < 0)
+          {
+            pos.y = y - sprite.size.y  / 2.0f;
+          }
+          else
+          {
+            pos.y = input->windowRect.size.y + y + sprite.size.y / 2.0f;
+          }
+
+          gameState->enemies.add(pos);
+
+          batch.timer -= batch.frequency;
+        }
+      }
+    }
+  }
+
+  // Update and draw Enemies
+  {
+    const float enemySpeed = 100;
+    for(int enemyIdx = 0; enemyIdx < gameState->enemies.count; enemyIdx++)
+    {
+      Vec2& pos = gameState->enemies[enemyIdx];
+
+      Vec2 direction = normalize(gameState->playerPos - pos);
+      pos += direction * enemySpeed * dt;
+
+      draw_sprite(SPRITE_ENEMY, pos);
+    }
+  }
+
+  // Update and draw projectiles
+  {
+    const float projSpeed = 300;
+    for(int projIdx = 0; projIdx < gameState->projectiles.count; projIdx++)
+    {
+      Projectile& proj = gameState->projectiles[projIdx];
+
+      proj.pos += proj.direction * projSpeed * dt;
+
+      // Left Collision with Window
+      if(proj.pos.x <= 0)
+      {
+        input->forces.x = -4;
+        input->forces.z =  2.2;
+        gameState->projectiles.remove_idx_and_swap(projIdx--);
+        continue;
+      }
+
+      // Right Collision with Window
+      {
+        input->forces.z = 3;
+        gameState->projectiles.remove_idx_and_swap(projIdx--);
+        continue;
+      }
+
+      // Top Collision with Window
+      if(proj.pos.y <= 0)
+      {
+        input->forces.y = -4;
+        input->forces.w =  2.2;
+        gameState->projectiles.remove_idx_and_swap(projIdx--);
+        continue;
+      }
+
+      // Bottom Collision with Window
+      if(proj.pos.y >= input->windowRect.size.y)
+      {
+        input->forces.w = 3;
+        gameState->projectiles.remove_idx_and_swap(projIdx--);
+        continue;
+      }
+
+      bool enemyHit = false;
+      for(int enemyIdx = 0; enemyIdx < gameState->enemies.count; enemyIdx++)
+      {
+        Rect enemyRect = {gameState->enemies[enemyIdx], {32, 38}};
+        if(point_in_rect(proj.pos, enemyRect))
+        {
+          enemyHit = true;
+          gameState->enemies.remove_idx_and_swap(enemyIdx);
+          break;
+        }
+      }
+
+      if(enemyHit)
+      {
+        gameState->projectiles.remove_idx_and_swap(projIdx--);
+        continue;
+      }
+
+      // Draw
+      draw_quad(proj.pos, {8, 8});
+    }
+  }
+
 }

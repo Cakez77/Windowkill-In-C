@@ -115,6 +115,9 @@ int main()
 
   gl_init(&transientStorage);
 
+  // Seed for random numbers
+  srand((uint32_t)__rdtsc());
+
   while(running)
   {
     float dt = get_delta_time();
@@ -128,12 +131,25 @@ int main()
     platform_update_audio(dt);
     platform_swap_buffers();
 
-    SetWindowPos(window, NULL, 
-                (int)input->windowRect.pos.x,
-                (int)input->windowRect.pos.y,
-                (int)input->windowRect.size.x,
-                (int)input->windowRect.size.y, 
-                0);
+    // WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX
+    int dwStyle = WS_OVERLAPPEDWINDOW;
+    RECT borderRect = {};
+    AdjustWindowRectEx(&borderRect, dwStyle, 0, 0);
+
+    int borderWidth = borderRect.right - borderRect.left;
+    int borderHeight = borderRect.bottom - borderRect.top;
+    int xPos = input->windowRect.pos.x;
+    int yPos = input->windowRect.pos.y;
+    int width = input->windowRect.size.x;
+    int height = input->windowRect.size.y;
+
+    width += borderWidth;
+    height += borderHeight;
+    xPos -= borderWidth;
+    yPos -= borderHeight;
+
+
+    SetWindowPos(window, NULL, xPos, yPos, width, height, 0);
 
     transientStorage.used = 0;
   }

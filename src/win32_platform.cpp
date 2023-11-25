@@ -337,7 +337,17 @@ bool platform_create_window(int width, int height, char* title,
 }
 
 void platform_update_window()
-{
+{  
+  // Rest Input
+  input->relMouse = {};
+  input->relMouseWorld = {};
+  for (int keyIdx = 0; keyIdx < KEY_COUNT; keyIdx++)
+  {      
+    input->keys[keyIdx].justReleased = false;
+    input->keys[keyIdx].justPressed = false;
+    input->keys[keyIdx].halfTransitionCount = 0;
+  }
+
   // Gather new Input
   MSG msg;
   while(PeekMessageA(&msg, window, 0, 0, PM_REMOVE))

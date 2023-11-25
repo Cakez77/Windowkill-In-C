@@ -20,6 +20,7 @@
 int RENDERING_OPTION_FLIP_X = BIT(0);
 int RENDERING_OPTION_FLIP_Y = BIT(1);
 int RENDERING_OPTION_FONT = BIT(2);
+int RENDERING_OPTION_TRANSPARENT = BIT(3);
 
 // #############################################################################
 //                           Rendering Structs
