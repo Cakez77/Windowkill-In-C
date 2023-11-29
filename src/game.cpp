@@ -97,6 +97,8 @@ EXPORT_FN void update_game(GameState* gameStateIn,
       gameState->keyMappings[PAUSE].keys.add(KEY_ESCAPE);
     }
 
+    gameState->playerAttack = 20;
+    gameState->windowStretch = 40;
     gameState->playerPos = {1920.0f / 2.0f, 1080.0f / 2.0f};
     gameState->initialized = true;
   }
@@ -106,17 +108,17 @@ EXPORT_FN void update_game(GameState* gameStateIn,
   // Top Left Origin Point
   renderData->gameCamera.dimensions = vec_2(input->screenSize);
   renderData->gameCamera.position.x = input->screenSize.x / 2.0f + input->windowPos.x + 4;
-  renderData->gameCamera.position.y = -input->screenSize.y / 2.0f - input->windowPos.y + 31 + 4;
+  renderData->gameCamera.position.y = -input->screenSize.y / 2.0f - input->windowPos.y;
 
   // Top Left Origin Point
   renderData->uiCamera.dimensions = vec_2(input->screenSize);
-  renderData->uiCamera.position.x = input->screenSize.x / 2.0f;
-  renderData->uiCamera.position.y = -input->screenSize.y / 2.0f;
+  renderData->uiCamera.position.x = input->screenSize.x / 2.0f + input->windowPos.x + 4;
+  renderData->uiCamera.position.y = -input->screenSize.y / 2.0f - input->windowPos.y;
 
   const float windowSizeXStart = 1920;
-  const float windowSizeXEnd = 640;
+  const float windowSizeXEnd = 300;
   const float windowSizeYStart = 1080;
-  const float windowSizeYEnd = 480;
+  const float windowSizeYEnd = 300;
   const float windowXStart = 0;
   const float windowYStart = 0;
   const float windowXEnd = (windowSizeXStart - windowSizeXEnd) / 2;
@@ -150,7 +152,7 @@ EXPORT_FN void update_game(GameState* gameStateIn,
 
   // play_sound("First Steps", SOUND_OPTION_LOOP);
 
-  const float pixelsPerSecond = dt * 34;
+  const float pixelsPerSecond = dt * 40;
   const float slowdown = 0.3;
   const float speed = 100;
 
@@ -186,41 +188,124 @@ EXPORT_FN void update_game(GameState* gameStateIn,
   }
 
   // TODO: Screen == World, for player position
-  // gameState->playerPos.x = clamp(gameState->playerPos.x, 
-  //                                input->windowRect.pos.x, input->windowRect.size.x - 6);
-  // gameState->playerPos.y = clamp(gameState->playerPos.y, 
-  //                                input->windowRect.pos.y, input->windowRect.size.y - 6);
+  gameState->playerPos.x = clamp(gameState->playerPos.x, 
+                                 input->windowRect.pos.x, 
+                                 input->windowRect.pos.x + 
+                                 input->windowRect.size.x);
+  gameState->playerPos.y = clamp(gameState->playerPos.y, 
+                                 input->windowRect.pos.y, 
+                                 input->windowRect.pos.y + 
+                                 input->windowRect.size.y - 6);
 
-  Vec2 moveStrength = Vec2{input->windowRect.size.x - windowSizeXEnd, 
-                            input->windowRect.size.y - windowSizeYEnd} / 
-                      Vec2{windowSizeXStart - windowSizeXEnd, 
-                           windowSizeYStart - windowSizeYEnd};  
+  // Vec2 moveStrength = Vec2{input->windowRect.size.x - windowSizeXEnd, 
+  //                           input->windowRect.size.y - windowSizeYEnd} / 
+  //                     Vec2{windowSizeXStart - windowSizeXEnd, 
+  //                          windowSizeYStart - windowSizeYEnd};
+  // moveStrength.x = ease_out_expo(moveStrength.x * 4);
+  // moveStrength.y = ease_out_expo(moveStrength.y * 4);
 
+  // draw_format_ui_text("moveStrength: %.2f", gameState->playerPos, moveStrength);
+
+  float xDiff = fabsf(input->windowRect.size.x - windowSizeXEnd);
+  float yDiff = fabsf(input->windowRect.size.y - windowSizeYEnd);
+  Vec2 moveStrength = Vec2{xDiff / (windowSizeXStart - windowSizeXEnd), 
+                           yDiff / (windowSizeYStart - windowSizeYEnd)};
   moveStrength.x = ease_out_expo(moveStrength.x * 4);
   moveStrength.y = ease_out_expo(moveStrength.y * 4);
 
-  draw_format_ui_text("x:%.2f,y:%.2f", {-140, 0}, moveStrength.x, moveStrength.y);
+  static Rect targetWindowRect = input->windowRect;
+  // Window shrinking
+  {
+    targetWindowRect.pos.x += pixelsPerSecond * moveStrength.x;
+    targetWindowRect.pos.y += pixelsPerSecond * moveStrength.y;
+    targetWindowRect.size.x -= pixelsPerSecond * 2 * moveStrength.x;
+    targetWindowRect.size.y -= pixelsPerSecond * 2 * moveStrength.y;
+  }
 
-  input->forces.x = approach(input->forces.x, pixelsPerSecond * moveStrength.x, slowdown);
-  input->forces.y = approach(input->forces.y, pixelsPerSecond * moveStrength.y, slowdown);
-  input->forces.z = approach(input->forces.z, -pixelsPerSecond * moveStrength.x, slowdown);
-  input->forces.w = approach(input->forces.w, -pixelsPerSecond * moveStrength.y, slowdown);
+  targetWindowRect.size.x = clamp(targetWindowRect.size.x, windowSizeXEnd, windowSizeXStart);
+  targetWindowRect.size.y = clamp(targetWindowRect.size.y, windowSizeYEnd, windowSizeYStart);
 
-  input->windowRect.pos.x += input->forces.x;
-  input->windowRect.pos.y += input->forces.y;
-  input->windowRect.size.x += input->forces.z * 2;
-  input->windowRect.size.y += input->forces.w * 2;
-
-  input->windowRect.pos.x = clamp(input->windowRect.pos.x, 0, windowSizeXStart - windowSizeXEnd);
-  input->windowRect.pos.y = clamp(input->windowRect.pos.y, 0, windowSizeYStart - windowSizeYEnd);
-  input->windowRect.size.x = clamp(input->windowRect.size.x, windowSizeXEnd, windowSizeXStart);
-  input->windowRect.size.y = clamp(input->windowRect.size.y, windowSizeYEnd, windowSizeYStart);
+  float t = 0.1f;
+  input->windowRect.pos.x = lerp(input->windowRect.pos.x, targetWindowRect.pos.x, t);
+  input->windowRect.pos.y = lerp(input->windowRect.pos.y, targetWindowRect.pos.y, t);
+  input->windowRect.size.x = lerp(input->windowRect.size.x, targetWindowRect.size.x, t); 
+  input->windowRect.size.y = lerp(input->windowRect.size.y, targetWindowRect.size.y, t);
 
   draw_sprite(SPRITE_PLAYER, gameState->playerPos,
               {.renderOptions = RENDERING_OPTION_TRANSPARENT});
 
+  // Update and draw projectiles
+  {
+    const float projSpeed = 300;
+    for(int projIdx = 0; projIdx < gameState->projectiles.count; projIdx++)
+    {
+      Projectile& proj = gameState->projectiles[projIdx];
+      proj.pos += proj.direction * projSpeed * dt;
+
+      // Left Collision with Window
+      if(proj.pos.x <= input->windowRect.pos.x)
+      {
+        targetWindowRect.pos.x -= gameState->windowStretch;
+        targetWindowRect.size.x += gameState->windowStretch;
+        gameState->projectiles.remove_idx_and_swap(projIdx--);
+        continue;
+      }
+
+      // Right Collision with Window
+      if(proj.pos.x >= input->windowRect.pos.x + input->windowRect.size.x)
+      {
+        targetWindowRect.size.x += gameState->windowStretch;
+        gameState->projectiles.remove_idx_and_swap(projIdx--);
+        continue;
+      }
+
+      // Top Collision with Window
+      if(proj.pos.y <= input->windowRect.pos.y)
+      {
+        targetWindowRect.pos.y -= gameState->windowStretch;
+        targetWindowRect.size.y += gameState->windowStretch;
+        gameState->projectiles.remove_idx_and_swap(projIdx--);
+        continue;
+      }
+
+      // Bottom Collision with Window
+      if(proj.pos.y >= input->windowRect.pos.y + input->windowRect.size.y)
+      {
+        targetWindowRect.size.y += gameState->windowStretch;
+        gameState->projectiles.remove_idx_and_swap(projIdx--);
+        continue;
+      }
+
+      bool enemyHit = false;
+      for(int enemyIdx = 0; enemyIdx < gameState->enemies.count; enemyIdx++)
+      {
+        Enemy& enemy = gameState->enemies[enemyIdx];
+        Rect enemyRect = {enemy.pos, {32, 38}};
+
+        if(point_in_rect(proj.pos, enemyRect))
+        {
+          enemyHit = true;
+          enemy.health -= gameState->playerAttack;
+          if(enemy.health <= 0)
+          {
+            gameState->enemies.remove_idx_and_swap(enemyIdx);
+          }
+          break;
+        }
+      }
+
+      if(enemyHit)
+      {
+        gameState->projectiles.remove_idx_and_swap(projIdx--);
+        continue;
+      }
+
+      // Draw
+      draw_quad(proj.pos, {8, 8});
+    }
+  }
+
   // Spawn System
-  if(false)
   {
     Sprite sprite = get_sprite(SPRITE_ENEMY);
     for(int batchIdx = 0; batchIdx < ArraySize(spawns); batchIdx++)
@@ -254,7 +339,10 @@ EXPORT_FN void update_game(GameState* gameStateIn,
             pos.y = input->windowRect.size.y + y + sprite.size.y / 2.0f;
           }
 
-          gameState->enemies.add(pos);
+          Enemy enemy = {};
+          enemy.speed = speed;
+          enemy.pos = pos;
+          gameState->enemies.add(enemy);
 
           batch.timer -= batch.frequency;
         }
@@ -267,79 +355,11 @@ EXPORT_FN void update_game(GameState* gameStateIn,
     const float enemySpeed = 100;
     for(int enemyIdx = 0; enemyIdx < gameState->enemies.count; enemyIdx++)
     {
-      Vec2& pos = gameState->enemies[enemyIdx];
+      Enemy& enemy = gameState->enemies[enemyIdx];
 
-      Vec2 direction = normalize(gameState->playerPos - pos);
-      pos += direction * enemySpeed * dt;
-
-      draw_sprite(SPRITE_ENEMY, pos);
+      Vec2 direction = normalize(gameState->playerPos - enemy.pos);
+      enemy.pos += direction * enemySpeed * dt;
+      draw_sprite(SPRITE_ENEMY, enemy.pos);
     }
   }
-
-  // Update and draw projectiles
-  {
-    const float projSpeed = 300;
-    for(int projIdx = 0; projIdx < gameState->projectiles.count; projIdx++)
-    {
-      Projectile& proj = gameState->projectiles[projIdx];
-
-      proj.pos += proj.direction * projSpeed * dt;
-
-      // Left Collision with Window
-      if(proj.pos.x <= input->windowRect.pos.x)
-      {
-        input->forces.x = -4;
-        input->forces.z =  2.6;
-        gameState->projectiles.remove_idx_and_swap(projIdx--);
-        continue;
-      }
-
-      // Right Collision with Window
-      if(proj.pos.x >= input->windowRect.pos.x + input->windowRect.size.x)
-      {
-        input->forces.z = 3;
-        gameState->projectiles.remove_idx_and_swap(projIdx--);
-        continue;
-      }
-
-      // Top Collision with Window
-      if(proj.pos.y <= input->windowRect.pos.y)
-      {
-        input->windowRect.pos.y -= 10;
-        input->windowRect.size.y += 10;
-        gameState->projectiles.remove_idx_and_swap(projIdx--);
-        continue;
-      }
-
-      // Bottom Collision with Window
-      if(proj.pos.y >= input->windowRect.pos.y + input->windowRect.size.y)
-      {
-        input->windowRect.size.y += 10;
-        gameState->projectiles.remove_idx_and_swap(projIdx--);
-        continue;
-      }
-
-      bool enemyHit = false;
-      for(int enemyIdx = 0; enemyIdx < gameState->enemies.count; enemyIdx++)
-      {
-        Rect enemyRect = {gameState->enemies[enemyIdx], {32, 38}};
-        if(point_in_rect(proj.pos, enemyRect))
-        {
-          enemyHit = true;
-          gameState->enemies.remove_idx_and_swap(enemyIdx);
-          break;
-        }
-      }
-
-      if(enemyHit)
-      {
-        gameState->projectiles.remove_idx_and_swap(projIdx--);
-        continue;
-      }
-
-      // Draw
-      draw_quad(proj.pos, {8, 8});
-    }
-  }
-
 }

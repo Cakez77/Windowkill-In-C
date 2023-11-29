@@ -43,6 +43,13 @@ struct Projectile
   bool hitEnemy = true;
 };
 
+struct Enemy
+{
+  int health = 60;
+  float speed;
+  Vec2 pos;
+};
+
 enum GameStateID
 {
   GAME_STATE_MAIN_MENU,
@@ -55,8 +62,10 @@ struct GameState
   bool initialized = false;
   bool roundInitialized = false;
 
+  float windowStretch;
+  float playerAttack;
   Vec2 playerPos;
-  Array<Vec2, 30> enemies;
+  Array<Enemy, 30> enemies;
 
   Array<Projectile, 100> projectiles;
   KeyMapping keyMappings[GAME_INPUT_COUNT];
