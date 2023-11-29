@@ -813,6 +813,11 @@ struct IVec2
     return {x - other.x, y - other.y};
   }
 
+  IVec2 operator+(IVec2 other)
+  {
+    return {x + other.x, y + other.y};
+  }
+
   IVec2& operator-=(int value)
   {
     x -= value; 

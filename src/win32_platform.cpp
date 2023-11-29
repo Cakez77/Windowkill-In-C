@@ -9,6 +9,12 @@
 #include "wglext.h"
 
 // #############################################################################
+//                           Windows Constants
+// #############################################################################
+  // WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX
+  constexpr int dwStyle = WS_OVERLAPPEDWINDOW;
+
+// #############################################################################
 //                           Windows Structures
 // #############################################################################
 struct xAudioVoice : IXAudio2VoiceCallback
@@ -63,12 +69,18 @@ LRESULT CALLBACK windows_window_callback(HWND window, UINT msg,
       break;
     }
 
+    case WM_MOVE:
     case WM_SIZE:
     {
-      RECT rect = {};
-      GetClientRect(window, &rect);
-      input->screenSize.x = rect.right - rect.left;
-      input->screenSize.y = rect.bottom - rect.top;
+      RECT borderRect = {};
+      AdjustWindowRectEx(&borderRect, dwStyle, 0, 0);
+
+      RECT windowRect =  {};
+      GetWindowRect(window, &windowRect);
+      input->screenSize.x = windowRect.right - windowRect.left;
+      input->screenSize.y = windowRect.bottom - windowRect.top;
+      input->windowPos.x = windowRect.left - borderRect.left;
+      input->windowPos.y = windowRect.top + (borderRect.top + borderRect.bottom / 2);
 
       break;
     }
@@ -365,6 +377,9 @@ void platform_update_window()
     input->mousePos.x = point.x;
     input->mousePos.y = point.y;
      
+    // Mouse Position Screen
+    input->mousePosScreen = input->mousePos + input->windowPos;
+
     // Mouse Position World
     input->mousePosWorld = screen_to_world(input->mousePos);
   }

@@ -131,8 +131,6 @@ int main()
     platform_update_audio(dt);
     platform_swap_buffers();
 
-    // WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX
-    int dwStyle = WS_OVERLAPPEDWINDOW;
     RECT borderRect = {};
     AdjustWindowRectEx(&borderRect, dwStyle, 0, 0);
 
@@ -145,10 +143,8 @@ int main()
 
     width += borderWidth;
     height += borderHeight;
-    xPos -= borderWidth;
-    yPos -= borderHeight;
-
-
+    xPos -= borderWidth / 2;
+    yPos -= borderHeight / 2;
     SetWindowPos(window, NULL, xPos, yPos, width, height, 0);
 
     transientStorage.used = 0;

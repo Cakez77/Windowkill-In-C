@@ -97,6 +97,7 @@ EXPORT_FN void update_game(GameState* gameStateIn,
       gameState->keyMappings[PAUSE].keys.add(KEY_ESCAPE);
     }
 
+    gameState->playerPos = {1920.0f / 2.0f, 1080.0f / 2.0f};
     gameState->initialized = true;
   }
 
@@ -104,16 +105,13 @@ EXPORT_FN void update_game(GameState* gameStateIn,
 
   // Top Left Origin Point
   renderData->gameCamera.dimensions = vec_2(input->screenSize);
-  renderData->gameCamera.position.x = input->screenSize.x / 2.0f;
-  renderData->gameCamera.position.y = -input->screenSize.y / 2.0f;
+  renderData->gameCamera.position.x = input->screenSize.x / 2.0f + input->windowPos.x + 4;
+  renderData->gameCamera.position.y = -input->screenSize.y / 2.0f - input->windowPos.y + 31 + 4;
 
   // Top Left Origin Point
   renderData->uiCamera.dimensions = vec_2(input->screenSize);
   renderData->uiCamera.position.x = input->screenSize.x / 2.0f;
   renderData->uiCamera.position.y = -input->screenSize.y / 2.0f;
-
-  const Vec2 MIN_WINDOW_SIZE = {640, 480};
-
 
   const float windowSizeXStart = 1920;
   const float windowSizeXEnd = 640;
@@ -161,10 +159,10 @@ EXPORT_FN void update_game(GameState* gameStateIn,
     Projectile proj = 
     {
       .pos = gameState->playerPos,
-      .direction = normalize(vec_2(input->mousePos) - gameState->playerPos),
+      .direction = normalize(vec_2(input->mousePosScreen) - gameState->playerPos),
     };
 
-    gameState->projectiles.add(proj);
+   gameState->projectiles.add(proj);
   }
 
   if(is_down(MOVE_LEFT))
@@ -188,10 +186,10 @@ EXPORT_FN void update_game(GameState* gameStateIn,
   }
 
   // TODO: Screen == World, for player position
-  gameState->playerPos.x = clamp(gameState->playerPos.x, 
-                                 6, input->windowRect.size.x - 6);
-  gameState->playerPos.y = clamp(gameState->playerPos.y, 
-                                 6, input->windowRect.size.y - 6);
+  // gameState->playerPos.x = clamp(gameState->playerPos.x, 
+  //                                input->windowRect.pos.x, input->windowRect.size.x - 6);
+  // gameState->playerPos.y = clamp(gameState->playerPos.y, 
+  //                                input->windowRect.pos.y, input->windowRect.size.y - 6);
 
   Vec2 moveStrength = Vec2{input->windowRect.size.x - windowSizeXEnd, 
                             input->windowRect.size.y - windowSizeYEnd} / 
@@ -218,10 +216,11 @@ EXPORT_FN void update_game(GameState* gameStateIn,
   input->windowRect.size.x = clamp(input->windowRect.size.x, windowSizeXEnd, windowSizeXStart);
   input->windowRect.size.y = clamp(input->windowRect.size.y, windowSizeYEnd, windowSizeYStart);
 
-  draw_sprite(SPRITE_PLAYER, gameState->playerPos, 
+  draw_sprite(SPRITE_PLAYER, gameState->playerPos,
               {.renderOptions = RENDERING_OPTION_TRANSPARENT});
 
   // Spawn System
+  if(false)
   {
     Sprite sprite = get_sprite(SPRITE_ENEMY);
     for(int batchIdx = 0; batchIdx < ArraySize(spawns); batchIdx++)
@@ -287,15 +286,16 @@ EXPORT_FN void update_game(GameState* gameStateIn,
       proj.pos += proj.direction * projSpeed * dt;
 
       // Left Collision with Window
-      if(proj.pos.x <= 0)
+      if(proj.pos.x <= input->windowRect.pos.x)
       {
         input->forces.x = -4;
-        input->forces.z =  2.2;
+        input->forces.z =  2.6;
         gameState->projectiles.remove_idx_and_swap(projIdx--);
         continue;
       }
 
       // Right Collision with Window
+      if(proj.pos.x >= input->windowRect.pos.x + input->windowRect.size.x)
       {
         input->forces.z = 3;
         gameState->projectiles.remove_idx_and_swap(projIdx--);
@@ -303,18 +303,18 @@ EXPORT_FN void update_game(GameState* gameStateIn,
       }
 
       // Top Collision with Window
-      if(proj.pos.y <= 0)
+      if(proj.pos.y <= input->windowRect.pos.y)
       {
-        input->forces.y = -4;
-        input->forces.w =  2.2;
+        input->windowRect.pos.y -= 10;
+        input->windowRect.size.y += 10;
         gameState->projectiles.remove_idx_and_swap(projIdx--);
         continue;
       }
 
       // Bottom Collision with Window
-      if(proj.pos.y >= input->windowRect.size.y)
+      if(proj.pos.y >= input->windowRect.pos.y + input->windowRect.size.y)
       {
-        input->forces.w = 3;
+        input->windowRect.size.y += 10;
         gameState->projectiles.remove_idx_and_swap(projIdx--);
         continue;
       }

@@ -102,6 +102,7 @@ struct Input
   IVec2 prevMousePosWorld;
   IVec2 mousePosWorld;
   IVec2 relMouseWorld;
+  IVec2 mousePosScreen;
 
   Key keys[KEY_COUNT];
 };
