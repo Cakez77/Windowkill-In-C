@@ -772,6 +772,16 @@ struct Vec2
     return *this;
   }
 
+  Vec2 operator+(const Vec2 other)
+  {
+    return {x + other.x, y + other.y};
+  }
+
+  Vec2 operator+(float scalar)
+  {
+    return {x + scalar, y + scalar};
+  }
+
   Vec2 operator/(float scalar)
   {
     return {x / scalar, y / scalar};
@@ -780,6 +790,11 @@ struct Vec2
   Vec2 operator/(const Vec2 other)
   {
     return {x / other.x, y / other.y};
+  }
+
+  Vec2 operator*(const Vec2 other)
+  {
+    return {x * other.x, y * other.y};
   }
 
   Vec2 operator*(float scalar)
@@ -843,6 +858,11 @@ Vec2 vec_2(IVec2 v)
   return Vec2{(float)v.x, (float)v.y};
 }
 
+IVec2 ivec_2(Vec2 v)
+{
+  return IVec2{(int)v.x, (int)v.y};
+}
+
 Vec2 lerp(Vec2 a, Vec2 b, float t)
 {
   Vec2 result;
@@ -867,6 +887,11 @@ float length(Vec2 v)
 float length(Vec2 a, Vec2 b)
 {
   return length(b - a);
+}
+
+float get_angle(Vec2 direction)
+{
+  return (atan2f(direction.y, direction.x) + 3.14f / 2.0f);
 }
 
 Vec2 normalize(Vec2 v)

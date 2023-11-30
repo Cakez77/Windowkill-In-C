@@ -33,8 +33,8 @@ struct Transform
   ivec2 spriteSize;
   int renderOptions;
   int materialIdx;
+  float angle;
   float layer;
-  int padding;
 };
 
 struct Material

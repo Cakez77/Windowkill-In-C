@@ -14,6 +14,7 @@ enum SpriteID
   SPRITE_WHITE,
   SPRITE_PLAYER,
   SPRITE_ENEMY,
+  SPRITE_CROSSHAIR,
 
   SPRITE_COUNT
 };
@@ -53,6 +54,12 @@ Sprite get_sprite(SpriteID spriteID)
     {
       sprite.atlasOffset = {64, 0};
       sprite.size = {48, 48};
+      break;
+    }
+    case SPRITE_CROSSHAIR:
+    {
+      sprite.atlasOffset = {0, 48};
+      sprite.size = {32, 32};
       break;
     }
   }

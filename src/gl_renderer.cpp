@@ -380,12 +380,12 @@ void gl_render(BumpAllocator* transientStorage)
   glClearColor(0, 0, 0, 1);
   glClearDepth(0.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glViewport(0, 0, input->screenSize.x, input->screenSize.y);
+  glViewport(0, 0, input->clientRect.size.x, input->clientRect.size.y);
 
   // Copy screen size to the GPU
   {
-    Vec2 screenSize = {(float)input->screenSize.x, (float)input->screenSize.y};
-    glUniform2fv(glContext.screenSizeID, 1, &screenSize.x);
+    Vec2 windowSize = input->clientRect.size;
+    glUniform2fv(glContext.screenSizeID, 1, &windowSize.x);
   }
 
   // Copy Materials to the GPU

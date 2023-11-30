@@ -98,22 +98,23 @@ EXPORT_FN void update_game(GameState* gameStateIn,
     }
 
     gameState->playerAttack = 20;
-    gameState->windowStretch = 40;
+    gameState->worldStretch = 40;
     gameState->playerPos = {1920.0f / 2.0f, 1080.0f / 2.0f};
     gameState->initialized = true;
+    gameState->worldRect = input->clientRect;
   }
 
   gameTime += dt;
 
-  // Top Left Origin Point
-  renderData->gameCamera.dimensions = vec_2(input->screenSize);
-  renderData->gameCamera.position.x = input->screenSize.x / 2.0f + input->windowPos.x + 4;
-  renderData->gameCamera.position.y = -input->screenSize.y / 2.0f - input->windowPos.y;
+  // Top Left Origin Point, 4 is windows window border / 2 (8px / 2)
+  renderData->gameCamera.dimensions = input->clientRect.size;
+  renderData->gameCamera.position.x = input->clientRect.size.x / 2.0f + input->clientRect.pos.x;
+  renderData->gameCamera.position.y = -input->clientRect.size.y / 2.0f - input->clientRect.pos.y;
 
   // Top Left Origin Point
-  renderData->uiCamera.dimensions = vec_2(input->screenSize);
-  renderData->uiCamera.position.x = input->screenSize.x / 2.0f + input->windowPos.x + 4;
-  renderData->uiCamera.position.y = -input->screenSize.y / 2.0f - input->windowPos.y;
+  renderData->uiCamera.dimensions = input->clientRect.size;
+  renderData->uiCamera.position.x = input->clientRect.size.x / 2.0f + input->clientRect.pos.x;
+  renderData->uiCamera.position.y = -input->clientRect.size.y / 2.0f - input->clientRect.pos.y;
 
   const float windowSizeXStart = 1920;
   const float windowSizeXEnd = 300;
@@ -142,10 +143,10 @@ EXPORT_FN void update_game(GameState* gameStateIn,
 
     float t = ease_out_back((timer - 2) / (duration - 2));
 
-    input->windowRect.pos.x = windowXStart * (1 - t) + windowXEnd * t;
-    input->windowRect.pos.y = windowYStart * (1 - t) + windowYEnd * t;
-    input->windowRect.size.x = windowSizeXStart * (1 - t) + windowSizeXEnd * t;
-    input->windowRect.size.y = windowSizeYStart * (1 - t) + windowSizeYEnd * t;
+    gameState->worldRect.pos.x = windowXStart * (1 - t) + windowXEnd * t;
+    gameState->worldRect.pos.y = windowYStart * (1 - t) + windowYEnd * t;
+    gameState->worldRect.size.x = windowSizeXStart * (1 - t) + windowSizeXEnd * t;
+    gameState->worldRect.size.y = windowSizeYStart * (1 - t) + windowSizeYEnd * t;
 
     return;
   }
@@ -156,15 +157,18 @@ EXPORT_FN void update_game(GameState* gameStateIn,
   const float slowdown = 0.3;
   const float speed = 100;
 
+  draw_sprite(SPRITE_CROSSHAIR, input->mousePosScreen);
+
   if(just_pressed(MOUSE_LEFT))
   {
     Projectile proj = 
     {
       .pos = gameState->playerPos,
-      .direction = normalize(vec_2(input->mousePosScreen) - gameState->playerPos),
+      .direction = normalize(input->mousePosScreen - gameState->playerPos),
     };
 
-   gameState->projectiles.add(proj);
+    play_sound("shoot");
+    gameState->projectiles.add(proj);
   }
 
   if(is_down(MOVE_LEFT))
@@ -189,13 +193,13 @@ EXPORT_FN void update_game(GameState* gameStateIn,
 
   // TODO: Screen == World, for player position
   gameState->playerPos.x = clamp(gameState->playerPos.x, 
-                                 input->windowRect.pos.x, 
-                                 input->windowRect.pos.x + 
-                                 input->windowRect.size.x);
+                                 gameState->worldRect.pos.x, 
+                                 gameState->worldRect.pos.x + 
+                                 gameState->worldRect.size.x);
   gameState->playerPos.y = clamp(gameState->playerPos.y, 
-                                 input->windowRect.pos.y, 
-                                 input->windowRect.pos.y + 
-                                 input->windowRect.size.y - 6);
+                                 gameState->worldRect.pos.y, 
+                                 gameState->worldRect.pos.y + 
+                                 gameState->worldRect.size.y - 6);
 
   // Vec2 moveStrength = Vec2{input->windowRect.size.x - windowSizeXEnd, 
   //                           input->windowRect.size.y - windowSizeYEnd} / 
@@ -206,30 +210,30 @@ EXPORT_FN void update_game(GameState* gameStateIn,
 
   // draw_format_ui_text("moveStrength: %.2f", gameState->playerPos, moveStrength);
 
-  float xDiff = fabsf(input->windowRect.size.x - windowSizeXEnd);
-  float yDiff = fabsf(input->windowRect.size.y - windowSizeYEnd);
+  float xDiff = fabsf(gameState->worldRect.size.x - windowSizeXEnd);
+  float yDiff = fabsf(gameState->worldRect.size.y - windowSizeYEnd);
   Vec2 moveStrength = Vec2{xDiff / (windowSizeXStart - windowSizeXEnd), 
                            yDiff / (windowSizeYStart - windowSizeYEnd)};
   moveStrength.x = ease_out_expo(moveStrength.x * 4);
   moveStrength.y = ease_out_expo(moveStrength.y * 4);
 
-  static Rect targetWindowRect = input->windowRect;
+  static Rect targetWorldRect = gameState->worldRect;
   // Window shrinking
   {
-    targetWindowRect.pos.x += pixelsPerSecond * moveStrength.x;
-    targetWindowRect.pos.y += pixelsPerSecond * moveStrength.y;
-    targetWindowRect.size.x -= pixelsPerSecond * 2 * moveStrength.x;
-    targetWindowRect.size.y -= pixelsPerSecond * 2 * moveStrength.y;
+    targetWorldRect.pos.x += pixelsPerSecond * moveStrength.x;
+    targetWorldRect.pos.y += pixelsPerSecond * moveStrength.y;
+    targetWorldRect.size.x -= pixelsPerSecond * 2 * moveStrength.x;
+    targetWorldRect.size.y -= pixelsPerSecond * 2 * moveStrength.y;
   }
 
-  targetWindowRect.size.x = clamp(targetWindowRect.size.x, windowSizeXEnd, windowSizeXStart);
-  targetWindowRect.size.y = clamp(targetWindowRect.size.y, windowSizeYEnd, windowSizeYStart);
+  targetWorldRect.size.x = clamp(targetWorldRect.size.x, windowSizeXEnd, windowSizeXStart);
+  targetWorldRect.size.y = clamp(targetWorldRect.size.y, windowSizeYEnd, windowSizeYStart);
 
   float t = 0.1f;
-  input->windowRect.pos.x = lerp(input->windowRect.pos.x, targetWindowRect.pos.x, t);
-  input->windowRect.pos.y = lerp(input->windowRect.pos.y, targetWindowRect.pos.y, t);
-  input->windowRect.size.x = lerp(input->windowRect.size.x, targetWindowRect.size.x, t); 
-  input->windowRect.size.y = lerp(input->windowRect.size.y, targetWindowRect.size.y, t);
+  gameState->worldRect.pos.x = lerp(gameState->worldRect.pos.x, targetWorldRect.pos.x, t);
+  gameState->worldRect.pos.y = lerp(gameState->worldRect.pos.y, targetWorldRect.pos.y, t);
+  gameState->worldRect.size.x = lerp(gameState->worldRect.size.x, targetWorldRect.size.x, t); 
+  gameState->worldRect.size.y = lerp(gameState->worldRect.size.y, targetWorldRect.size.y, t);
 
   draw_sprite(SPRITE_PLAYER, gameState->playerPos,
               {.renderOptions = RENDERING_OPTION_TRANSPARENT});
@@ -243,35 +247,35 @@ EXPORT_FN void update_game(GameState* gameStateIn,
       proj.pos += proj.direction * projSpeed * dt;
 
       // Left Collision with Window
-      if(proj.pos.x <= input->windowRect.pos.x)
+      if(proj.pos.x <= input->clientRect.pos.x)
       {
-        targetWindowRect.pos.x -= gameState->windowStretch;
-        targetWindowRect.size.x += gameState->windowStretch;
+        targetWorldRect.pos.x -= gameState->worldStretch;
+        targetWorldRect.size.x += gameState->worldStretch;
         gameState->projectiles.remove_idx_and_swap(projIdx--);
         continue;
       }
 
       // Right Collision with Window
-      if(proj.pos.x >= input->windowRect.pos.x + input->windowRect.size.x)
+      if(proj.pos.x >= input->clientRect.pos.x + input->clientRect.size.x)
       {
-        targetWindowRect.size.x += gameState->windowStretch;
+        targetWorldRect.size.x += gameState->worldStretch;
         gameState->projectiles.remove_idx_and_swap(projIdx--);
         continue;
       }
 
       // Top Collision with Window
-      if(proj.pos.y <= input->windowRect.pos.y)
+      if(proj.pos.y <= input->clientRect.pos.y)
       {
-        targetWindowRect.pos.y -= gameState->windowStretch;
-        targetWindowRect.size.y += gameState->windowStretch;
+        targetWorldRect.pos.y -= gameState->worldStretch;
+        targetWorldRect.size.y += gameState->worldStretch;
         gameState->projectiles.remove_idx_and_swap(projIdx--);
         continue;
       }
 
       // Bottom Collision with Window
-      if(proj.pos.y >= input->windowRect.pos.y + input->windowRect.size.y)
+      if(proj.pos.y >= input->clientRect.pos.y + input->clientRect.size.y)
       {
-        targetWindowRect.size.y += gameState->windowStretch;
+        targetWorldRect.size.y += gameState->worldStretch;
         gameState->projectiles.remove_idx_and_swap(projIdx--);
         continue;
       }
@@ -285,6 +289,7 @@ EXPORT_FN void update_game(GameState* gameStateIn,
         if(point_in_rect(proj.pos, enemyRect))
         {
           enemyHit = true;
+          play_sound("impact");
           enemy.health -= gameState->playerAttack;
           if(enemy.health <= 0)
           {
@@ -306,6 +311,7 @@ EXPORT_FN void update_game(GameState* gameStateIn,
   }
 
   // Spawn System
+  if(true)
   {
     Sprite sprite = get_sprite(SPRITE_ENEMY);
     for(int batchIdx = 0; batchIdx < ArraySize(spawns); batchIdx++)
@@ -326,7 +332,7 @@ EXPORT_FN void update_game(GameState* gameStateIn,
           }
           else
           {
-            pos.x = input->windowRect.size.x + x + sprite.size.x / 2.0f;
+            pos.x = input->clientRect.size.x + x + sprite.size.x / 2.0f;
           }
 
           float y = random_range(-100, 100);
@@ -336,7 +342,7 @@ EXPORT_FN void update_game(GameState* gameStateIn,
           }
           else
           {
-            pos.y = input->windowRect.size.y + y + sprite.size.y / 2.0f;
+            pos.y = input->clientRect.size.y + y + sprite.size.y / 2.0f;
           }
 
           Enemy enemy = {};

@@ -34,6 +34,7 @@ struct DrawData
   int animationIdx;
   int renderOptions;
   float layer = 0.0f;
+  float angle = 0.0f;
 };
 
 struct TextData
@@ -74,19 +75,19 @@ static RenderData* renderData;
 // #############################################################################
 //                           Renderer Untility
 // #############################################################################
-IVec2 screen_to_world(IVec2 screenPos)
+Vec2 screen_to_world(Vec2 screenPos)
 {
   OrthographicCamera2D camera = renderData->gameCamera;
 
-  int xPos = (float)screenPos.x / 
-             (float)input->screenSize.x * 
+  float xPos = screenPos.x / 
+             input->windowSize.x * 
              camera.dimensions.x; // [0; dimensions.x]
 
   // Offset using dimensions and position
   xPos += -camera.dimensions.x / 2.0f + camera.position.x;
 
-  int yPos = (float)screenPos.y / 
-             (float)input->screenSize.y * 
+  float yPos = screenPos.y / 
+             input->windowSize.y * 
              camera.dimensions.y; // [0; dimensions.y]
 
   // Offset using dimensions and position
@@ -156,6 +157,7 @@ Transform get_transform(SpriteID spriteID, Vec2 pos, Vec2 size = {}, DrawData dr
   transform.spriteSize = sprite.size;
   transform.renderOptions = drawData.renderOptions;
   transform.layer = drawData.layer;
+  transform.angle = drawData.angle;
 
   return transform;
 }
@@ -190,6 +192,20 @@ void draw_sprite(SpriteID spriteID, Vec2 pos, DrawData drawData = {})
 void draw_sprite(SpriteID spriteID, IVec2 pos, DrawData drawData = {})
 {
   draw_sprite(spriteID, vec_2(pos), drawData);
+}
+
+void draw_line(Vec2 a, Vec2 b, DrawData drawData = {}, float lineThickness = 2.0f)
+{
+  Vec2 direction = normalize(b - a);
+  float lineLength = length(b - a);
+  drawData.angle = get_angle(direction);
+  
+  Vec2 startPos = a;
+  Vec2 quadMiddle = startPos + direction * lineLength/2.0f;
+  Vec2 quadSize = {lineThickness, lineLength};
+  
+  Transform transform = get_transform(SPRITE_WHITE, quadMiddle, quadSize, drawData);
+  draw_quad(transform);
 }
 
 // #############################################################################

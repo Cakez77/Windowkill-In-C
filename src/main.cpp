@@ -102,10 +102,10 @@ int main()
   platform_fill_keycode_lookup_table();
   platform_set_vsync(true);
 
-  input->windowRect.pos.x = input->windowPos.x;
-  input->windowRect.pos.y = input->windowPos.y;
-  input->windowRect.size.x = input->screenSize.x;
-  input->windowRect.size.y = input->screenSize.y;
+  input->clientRect.pos.x = input->windowPos.x;
+  input->clientRect.pos.y = input->windowPos.y;
+  input->clientRect.size.x = input->windowSize.x;
+  input->clientRect.size.y = input->windowSize.y;
 
   if(!platform_init_audio())
   {
@@ -136,16 +136,25 @@ int main()
 
     int borderWidth = borderRect.right - borderRect.left;
     int borderHeight = borderRect.bottom - borderRect.top;
-    int xPos = input->windowRect.pos.x;
-    int yPos = input->windowRect.pos.y;
-    int width = input->windowRect.size.x;
-    int height = input->windowRect.size.y;
+    int xPos = gameState->worldRect.pos.x;
+    int yPos = gameState->worldRect.pos.y;
+    int width = gameState->worldRect.size.x;
+    int height = gameState->worldRect.size.y;
 
     width += borderWidth;
     height += borderHeight;
     xPos -= borderWidth / 2;
     yPos -= borderHeight / 2;
     SetWindowPos(window, NULL, xPos, yPos, width, height, 0);
+
+    if(point_in_rect(input->mousePosScreen, input->clientRect))
+    {
+      ShowCursor(false);
+    }
+    else
+    {
+      ShowCursor(true);
+    }
 
     transientStorage.used = 0;
   }

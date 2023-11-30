@@ -72,15 +72,21 @@ LRESULT CALLBACK windows_window_callback(HWND window, UINT msg,
     case WM_MOVE:
     case WM_SIZE:
     {
-      RECT borderRect = {};
-      AdjustWindowRectEx(&borderRect, dwStyle, 0, 0);
-
       RECT windowRect =  {};
+      RECT clientRect =  {};
+      POINT clientPos = {};
+      GetClientRect(window, &clientRect);
+      ClientToScreen(window, &clientPos);
       GetWindowRect(window, &windowRect);
-      input->screenSize.x = windowRect.right - windowRect.left;
-      input->screenSize.y = windowRect.bottom - windowRect.top;
-      input->windowPos.x = windowRect.left - borderRect.left;
-      input->windowPos.y = windowRect.top + (borderRect.top + borderRect.bottom / 2);
+      input->clientRect.pos.x = clientPos.x;
+      input->clientRect.pos.y = clientPos.y;
+      input->clientRect.size.x = clientRect.right;
+      input->clientRect.size.y = clientRect.bottom;
+
+      input->windowSize.x = windowRect.right - windowRect.left;
+      input->windowSize.y = windowRect.bottom - windowRect.top;
+      input->windowPos.x = windowRect.left;
+      input->windowPos.y = windowRect.top;
 
       break;
     }
@@ -372,13 +378,12 @@ void platform_update_window()
   {
     POINT point = {};
     GetCursorPos(&point);
+    input->mousePosScreen.x = point.x;
+    input->mousePosScreen.y = point.y;
+     
     ScreenToClient(window, &point);
-
     input->mousePos.x = point.x;
     input->mousePos.y = point.y;
-     
-    // Mouse Position Screen
-    input->mousePosScreen = input->mousePos + input->windowPos;
 
     // Mouse Position World
     input->mousePosWorld = screen_to_world(input->mousePos);
@@ -617,7 +622,10 @@ void platform_update_audio(float dt)
         HRESULT hr = voice->voice->SubmitSourceBuffer(&buffer);
         if(!FAILED(hr)) 
         {
+          const float freqRange = 0.05f;
+          voice->voice->SetFrequencyRatio(1.0f + random_range(-freqRange, freqRange));
           voice->voice->Start();
+
           voice->soundPath = sound.file;
           voice->options = sound.options;
 		      InterlockedExchange((LONG*)&voice->playing, true);

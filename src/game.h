@@ -62,7 +62,9 @@ struct GameState
   bool initialized = false;
   bool roundInitialized = false;
 
-  float windowStretch;
+  Rect worldRect;
+
+  float worldStretch;
   float playerAttack;
   Vec2 playerPos;
   Array<Enemy, 30> enemies;

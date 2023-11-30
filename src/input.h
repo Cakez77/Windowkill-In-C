@@ -86,23 +86,23 @@ struct Key
 
 struct Input
 {
-  Rect windowRect;
+  Rect clientRect;
 
   Vec4 forces = {};
 
-  IVec2 windowPos;
-  IVec2 screenSize;
+  Vec2 windowPos;
+  Vec2 windowSize;
 
   // Screen
-  IVec2 prevMousePos;
-  IVec2 mousePos;
-  IVec2 relMouse;
+  Vec2 prevMousePos;
+  Vec2 mousePos;
+  Vec2 mousePosScreen;
+  Vec2 relMouse;
 
   // World
-  IVec2 prevMousePosWorld;
-  IVec2 mousePosWorld;
-  IVec2 relMouseWorld;
-  IVec2 mousePosScreen;
+  Vec2 prevMousePosWorld;
+  Vec2 mousePosWorld;
+  Vec2 relMouseWorld;
 
   Key keys[KEY_COUNT];
 };

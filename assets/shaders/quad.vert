@@ -36,6 +36,23 @@ void main()
     transform.pos + transform.size                        // Bottom Right
   };
 
+  // Rotation
+  {
+    float angle = transform.angle;
+    vec2 offset = transform.pos + transform.size / 2.0;
+    
+    for (int i = 0; i < 6; i++)
+    {
+      float newX = (vertices[i].x - offset.x) * cos(angle) - 
+      (vertices[i].y - offset.y) * sin(angle);
+      
+      float newY = (vertices[i].x - offset.x) * sin(angle) + 
+      (vertices[i].y - offset.y) * cos(angle);
+      
+      vertices[i].xy = vec2(newX + offset.x, newY + offset.y);
+    }
+  }
+
   int left = transform.atlasOffset.x;
   int top = transform.atlasOffset.y;
   int right = transform.atlasOffset.x + transform.spriteSize.x;
