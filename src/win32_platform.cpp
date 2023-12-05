@@ -159,14 +159,16 @@ bool platform_create_window(int width, int height, char* title,
   }
 
   // WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX
-  int dwStyle = WS_OVERLAPPEDWINDOW;
+  int dwStyle = WS_SYSMENU | WS_THICKFRAME | WS_CAPTION;
+  int dwExStyle = WS_EX_TOPMOST;
 
   PFNWGLCHOOSEPIXELFORMATARBPROC wglChoosePixelFormatARB = nullptr;
   PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB = nullptr;
 
   // Fake Window initializing OpenGL
   {
-    window = CreateWindowExA(0, title, // This references lpszClassName from wc
+    window = CreateWindowExA(dwExStyle, 
+                            title,    // This references lpszClassName from wc
                             title,    // This is the actual Title
                             dwStyle,
                             xPos,
@@ -266,7 +268,8 @@ bool platform_create_window(int width, int height, char* title,
       yPos -= borderHeight;
     }
 
-    window = CreateWindowExA(0, title, // This references lpszClassName from wc
+    window = CreateWindowExA(dwExStyle, 
+                            title,    // This references lpszClassName from wc
                             title,    // This is the actual Title
                             dwStyle,
                             xPos,

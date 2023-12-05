@@ -45,9 +45,12 @@ struct Projectile
 
 struct Enemy
 {
-  int health = 60;
+  int health = 80;
   float speed;
+  float knockbackResist;
   Vec2 pos;
+  Vec4 color;
+  float pushTime;
 };
 
 enum GameStateID
@@ -67,6 +70,10 @@ struct GameState
   float worldStretch;
   float playerAttack;
   Vec2 playerPos;
+  float playerKnockback;
+  int lives;
+  float attackTime;
+  float attackCooldown;
   Array<Enemy, 30> enemies;
 
   Array<Projectile, 100> projectiles;

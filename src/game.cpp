@@ -24,7 +24,7 @@ struct SpawnBatch
 static float gameTime = 0;
 static SpawnBatch spawns[] = 
 {
-  {0, 60, 5}, // Normal Enemies, 1 every 5 Seconds
+  {0, 60, 4}, // Normal Enemies, 1 every 4 Seconds
 };
 
 // #############################################################################
@@ -97,6 +97,9 @@ EXPORT_FN void update_game(GameState* gameStateIn,
       gameState->keyMappings[PAUSE].keys.add(KEY_ESCAPE);
     }
 
+    gameState->lives = 10;
+    gameState->attackCooldown = 0.5;
+    gameState->playerKnockback = 0;
     gameState->playerAttack = 20;
     gameState->worldStretch = 40;
     gameState->playerPos = {1920.0f / 2.0f, 1080.0f / 2.0f};
@@ -159,16 +162,23 @@ EXPORT_FN void update_game(GameState* gameStateIn,
 
   draw_sprite(SPRITE_CROSSHAIR, input->mousePosScreen);
 
-  if(just_pressed(MOUSE_LEFT))
+  gameState->attackTime = min(gameState->attackCooldown, 
+                              gameState->attackTime + dt);
+  if(is_down(MOUSE_LEFT))
   {
-    Projectile proj = 
-    {
-      .pos = gameState->playerPos,
-      .direction = normalize(input->mousePosScreen - gameState->playerPos),
-    };
 
-    play_sound("shoot");
-    gameState->projectiles.add(proj);
+    while(gameState->attackTime >= gameState->attackCooldown)
+    {
+      Projectile proj = 
+      {
+        .pos = gameState->playerPos,
+        .direction = normalize(input->mousePosScreen - gameState->playerPos),
+      };
+
+      play_sound("shoot");
+      gameState->projectiles.add(proj);
+      gameState->attackTime -= gameState->attackCooldown;
+    }
   }
 
   if(is_down(MOVE_LEFT))
@@ -190,6 +200,8 @@ EXPORT_FN void update_game(GameState* gameStateIn,
   {
     gameState->playerPos.y += speed * dt;
   }
+
+  draw_format_ui_text("Gametime: %.2f", gameState->playerPos, gameTime);
 
   // TODO: Screen == World, for player position
   gameState->playerPos.x = clamp(gameState->playerPos.x, 
@@ -286,11 +298,13 @@ EXPORT_FN void update_game(GameState* gameStateIn,
         Enemy& enemy = gameState->enemies[enemyIdx];
         Rect enemyRect = {enemy.pos, {32, 38}};
 
-        if(point_in_rect(proj.pos, enemyRect))
+        if(point_in_rect_center(proj.pos, enemyRect))
         {
           enemyHit = true;
           play_sound("impact");
           enemy.health -= gameState->playerAttack;
+          enemy.pushTime = 0.25f;
+          enemy.color = COLOR_WHITE;
           if(enemy.health <= 0)
           {
             gameState->enemies.remove_idx_and_swap(enemyIdx);
@@ -325,7 +339,7 @@ EXPORT_FN void update_game(GameState* gameStateIn,
         while(batch.timer >= batch.frequency)
         {
           Vec2 pos = {};
-          float x = random_range(-100, 100);
+          float x = random_range(-50, 50);
           if(x < 0)
           {
             pos.x = x - sprite.size.x / 2.0f;
@@ -335,7 +349,7 @@ EXPORT_FN void update_game(GameState* gameStateIn,
             pos.x = input->clientRect.size.x + x + sprite.size.x / 2.0f;
           }
 
-          float y = random_range(-100, 100);
+          float y = random_range(-50, 50);
           if(y < 0)
           {
             pos.y = y - sprite.size.y  / 2.0f;
@@ -364,8 +378,20 @@ EXPORT_FN void update_game(GameState* gameStateIn,
       Enemy& enemy = gameState->enemies[enemyIdx];
 
       Vec2 direction = normalize(gameState->playerPos - enemy.pos);
-      enemy.pos += direction * enemySpeed * dt;
-      draw_sprite(SPRITE_ENEMY, enemy.pos);
+      enemy.pushTime =max(0.0f, enemy.pushTime - dt);
+      float pushForce = ease_in_quad(enemy.pushTime);
+      float knockback = max(0.0f, gameState->playerKnockback - 
+                                  enemy.knockbackResist);
+      enemy.pos += direction * enemySpeed * dt - 
+                   direction * pushForce * knockback;
+
+      // Hit color management
+      enemy.color.r = max(0.0f, enemy.color.r - dt * 10);
+      enemy.color.g = max(0.0f, enemy.color.g - dt * 10);
+      enemy.color.b = max(0.0f, enemy.color.b - dt * 10);
+      enemy.color.a = max(0.0f, enemy.color.a - dt * 10);
+
+      draw_sprite(SPRITE_ENEMY, enemy.pos, {.material{.additiveColor = enemy.color}});
     }
   }
 }

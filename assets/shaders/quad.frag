@@ -41,6 +41,6 @@ void main()
       discard;
     }
 
-    fragColor = textureColor * material.color;
+    fragColor = textureColor * material.color + material.additiveColor;
   }
 }

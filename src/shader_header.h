@@ -42,11 +42,13 @@ struct Material
 	// Operator inside the Engine to compare materials
 #ifdef ENGINE 
   vec4 color = COLOR_WHITE;
+  vec4 additiveColor;
 	bool operator==(Material other)
 	{
-		return color == other.color;
+		return color == other.color && additiveColor == other.additiveColor;
 	}
 #else
   vec4 color;
+  vec4 additiveColor;
 #endif
 };
